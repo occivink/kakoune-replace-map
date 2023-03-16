@@ -160,4 +160,18 @@ assert-selections-are "'pong' 'ping'"
 replace-map 'dquote'
 assert-selections-are "'ping' 'pong'"
 
+# difficult characters
+exec '%di`!@#$%^&*()_+-=[];''./<lt>>"<esc>%Hs.<ret>'
+reg dquote \
+    '`' '!' '@' '#' '$' '%' '^' '&' '*' '(' ')' '_' '+' '-' \
+    '=' '[' ']' ';' '''' '.' '/' '<' '>' '"' \
+    1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24
+replace-map -map-order kkvv '"'
+assert-selections-are "'1' '2' '3' '4' '5' '6' '7' '8' '9' '10' '11' '12' '13' '14' '15' '16' '17' '18' '19' '20' '21' '22' '23' '24'"
+
+exec '%di123<esc>%Hs.<ret>'
+reg dquote '1' 'a' '3' 'c'
+replace-map dquote -not-found-value '`!@#$%^&*()_+-=[];''./<>"'
+assert-selections-are "'a' '`!@#$%%^&*()_+-=[];'\''./<>""' 'c'"
+
 delete-buffer

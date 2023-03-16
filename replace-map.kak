@@ -47,7 +47,6 @@ Switches:
                 not_found_mode=2
                 arg_num=$((arg_num + 1))
                 not_found_fallback_value="$1"
-                # TODO escape contents of fallback value (currently fails if it includes ')
                 shift
             elif [ "$arg" = '-allow-duplicate-keys' ]; then
                 allow_duplicate_keys=1
@@ -74,9 +73,27 @@ Switches:
             printf "fail 'Missing map register'"
             exit 1
         fi
+
         printf "replace-map-impl"
-        printf " '%s'" "$map_register" "$map_order" "$not_found_mode" "$not_found_fallback_value" \
-            "$allow_duplicate_keys" "$target_register" "$dry_run"
+        printf " '%s'" "$map_register" "$map_order" "$not_found_mode"
+        # $not_found_fallback_value can be arbitrary, so we need to escape it (== double-up single-quotes)
+        if [ "$not_found_fallback_value" = '' ]; then
+            printf " ''"
+        else
+            rest="$not_found_fallback_value"
+            printf " '"
+            while :; do
+                beforequote="${rest%%"'"*}"
+                if [ "$rest" = "$beforequote" ]; then
+                    printf '%s' "$rest"
+                    break
+                fi
+                printf "%s''" "$beforequote"
+                rest="${rest#*"'"}"
+            done
+            printf "'"
+        fi
+        printf " '%s'" "$allow_duplicate_keys" "$target_register" "$dry_run"
     }
 }
 
