@@ -132,6 +132,30 @@ reg dquote 'bah' 'boo' 'fib' 'fab' 'fib' 'fob' 'fib' 'fub'
 replace-map 'dquote' -allow-duplicate-keys
 assert-selections-are "'fub' 'boo'"
 
+# -select-found
+exec '%dibob sim pep<esc>%HS <ret>'
+
+reg dquote 'bob' 'fah' 'pep' 'bah'
+replace-map 'dquote' -select-found -not-found-keep
+assert-selections-are "'fah' 'bah'"
+exec '%HS <ret>'
+assert-selections-are "'fah' 'sim' 'bah'"
+reg dquote 'foo' 'bar' 'baz' 'roh'
+replace-map 'dquote' -select-found -not-found-keep # nothing found, nothing to select
+assert-selections-are "'fah' 'sim' 'bah'"
+
+# -select-not-found
+exec '%diboo baa bee<esc>%HS <ret>'
+
+reg dquote 'boo' 'bob' 'baa' 'bab'
+replace-map 'dquote' -select-not-found -not-found-keep
+assert-selections-are "'bee'"
+exec '%HS <ret>'
+assert-selections-are "'bob' 'bab' 'bee'"
+reg dquote 'bob' 'foo' 'bab' 'bar' 'bee' 'baz'
+replace-map 'dquote' -select-not-found -not-found-keep # all of them found, nothing to select
+assert-selections-are "'foo' 'bar' 'baz'"
+
 # -target-register
 exec '%disimple example<esc>%HS <ret>'
 

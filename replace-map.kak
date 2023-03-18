@@ -11,11 +11,14 @@ Switches:
                         vvkk: all values first, then all keys
     -not-found-keep: if a selection does not appear in the keys of the map, keep it as-is
     -not-found-value <value>: if a selection does not appear in the keys of the map, replace it with <value>
-    -allow-duplicate-keys: allows the same key to occur multiple times, in which case the value specified last prevails
+    -allow-duplicate-keys: allow the same key to occur multiple times, in which case the value specified last prevails
+    -select-found: only keep the selections who appeared in the keys of the map
+    -select-not-found: only keep the selections who did not appear in the keys of the map
     -target-register <register>: do not replace, put the results into the specified register instead
-    -dry-run: do not replace, only check if input parameters are valid
+    -dry-run: do not replace, only check if input parameters are valid (and select if applicable)
 ' -shell-script-candidates %{
-    printf '%s\n'  -map-order -not-found-keep -not-found-value -allow-duplicate-keys -target-register -dry-run
+    printf '%s\n'  -map-order -not-found-keep -not-found-value -allow-duplicate-keys \
+        -select-found -select-not-found -target-register -dry-run
 } %{
     eval %sh{
         has_map_register=0
@@ -24,6 +27,7 @@ Switches:
         not_found_mode=0 # 0 = fail / 1 = keep / 2 = fallback
         not_found_fallback_value=''
         allow_duplicate_keys=0
+        select_mode=0 # 0 = all / 1 = found / 2 = not found
         target_register=''
         dry_run=0
         while [ $# -ne 0 ]; do
@@ -50,6 +54,10 @@ Switches:
                 shift
             elif [ "$arg" = '-allow-duplicate-keys' ]; then
                 allow_duplicate_keys=1
+            elif [ "$arg" = '-select-found' ]; then
+                select_mode=1
+            elif [ "$arg" = '-select-not-found' ]; then
+                select_mode=2
             elif [ "$arg" = '-target-register' ]; then
                 [ $# -eq 0 ] && echo 'fail "Missing argument to -register"' && exit 1
                 arg_num=$((arg_num + 1))
@@ -93,12 +101,12 @@ Switches:
             done
             printf "'"
         fi
-        printf " '%s'" "$allow_duplicate_keys" "$target_register" "$dry_run"
+        printf " '%s'" "$allow_duplicate_keys" "$select_mode" "$target_register" "$dry_run"
     }
 }
 
-define-command replace-map-impl -hidden -params 7 %{
-    eval -save-regs %sh{ [ "$6" = '' ] && printf '"' } %sh{
+define-command replace-map-impl -hidden -params 8 %{
+    eval -save-regs %sh{ [ "$7" = '' ] && printf '"' } %sh{
 perl - "$@" <<'EOF'
 use strict;
 use warnings;
@@ -108,6 +116,7 @@ my $map_order = shift;
 my $not_found_mode = shift;
 my $not_found_fallback_value = shift;
 my $allow_duplicate_keys = shift;
+my $select_mode = shift;
 my $target_register = shift;
 my $dry_run = shift;
 
@@ -195,11 +204,16 @@ for (my $i = 0; $i < scalar(@map_values) / 2; $i++) {
 my $not_found_keys = 0;
 my $found_keys = 0;
 my @results;
-for my $selection (@selections) {
+my @indices_to_remove;
+for my $i (0 .. $#selections) {
+    my $selection = $selections[$i];
     if (exists($map{$selection})) {
         $found_keys += 1;
         my $value = $map{$selection};
         push(@results, $value);
+        if ($select_mode == 2) {
+            push(@indices_to_remove, $i);
+        }
     } else {
         $not_found_keys += 1;
         if ($not_found_mode == 0) {
@@ -210,6 +224,9 @@ for my $selection (@selections) {
             push(@results, $not_found_fallback_value);
         } else {
             exit;
+        }
+        if ($select_mode == 1) {
+            push(@indices_to_remove, $i);
         }
     }
 }
@@ -232,6 +249,19 @@ if ($dry_run == 0) {
     print(" ;");
     if ($target_register eq '') {
         print("exec R ;");
+    }
+}
+
+if ($select_mode != 0) {
+    if (scalar(@indices_to_remove) == scalar(@results)) {
+        # can't deselect everything
+    } else {
+        print("exec '");
+        for my $index (reverse(@indices_to_remove)) {
+            my $kak_index = $index + 1;
+            print("$kak_index<a-,>");
+        }
+        print("' ;");
     }
 }
 
