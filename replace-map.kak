@@ -12,8 +12,8 @@ Switches:
     -not-found-keep: if a selection does not appear in the keys of the map, keep it as-is
     -not-found-value <value>: if a selection does not appear in the keys of the map, replace it with <value>
     -allow-duplicate-keys: allow the same key to occur multiple times, in which case the value specified last prevails
-    -select-found: only keep the selections who appeared in the keys of the map
-    -select-not-found: only keep the selections who did not appear in the keys of the map
+    -select-found: only keep the selections which appeared in the keys of the map
+    -select-not-found: only keep the selections which did not appear in the keys of the map
     -target-register <register>: do not replace, put the results into the specified register instead
     -dry-run: do not replace, only check if input parameters are valid (and select if applicable)
 ' -shell-script-candidates %{
