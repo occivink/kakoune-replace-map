@@ -239,7 +239,7 @@ if ($dry_run == 0) {
     if ($target_register eq '') {
         print("reg dquote");
     } else {
-        # safe, target_register was already validated (and cannot be ')
+        # safe, target_register was already validated and escaped
         print("reg '$target_register'");
     }
     for my $result (@results) {
@@ -265,7 +265,7 @@ if ($select_mode != 0) {
     }
 }
 
-print("echo '{Information}Replaced $found_keys selections");
+print("echo -markup '{Information}Replaced $found_keys selections");
 if ($dry_run != 0) {
     print(" (dry-run)");
 }
